@@ -6,5 +6,13 @@
         "icon": "Rocketchat_A.png",
         "author": "Xiang",
         "level": 1
+    },
+    "TorrentSearch": {
+        "name": "搜索种子",
+        "description": "直接搜索指定站点的种子",
+        "version": "0.9.2", 
+        "icon": "Searxng_A.png",
+        "author": "Xiang",
+        "level": 1
     }
 }
