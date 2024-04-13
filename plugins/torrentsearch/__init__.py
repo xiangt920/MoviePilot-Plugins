@@ -1,3 +1,4 @@
+import subprocess
 import json
 import re
 import warnings
@@ -30,7 +31,7 @@ class TorrentSearch(_PluginBase):
     # 插件图标
     plugin_icon = "Searxng_A.png"
     # 插件版本
-    plugin_version = "0.9.2"
+    plugin_version = "1.3"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -47,6 +48,9 @@ class TorrentSearch(_PluginBase):
     siteoper = None
     _last_update_time: Optional[datetime] = None
     _torrent_data: list = []
+    # 正则表达式
+    _pattern_progress_start = re.compile('^\{(.*\(\));')
+    _pattern_progress_end = re.compile('\)}(.{1,20}\(\))}}$')
 
     # 配置属性
     _enabled: bool = False
@@ -89,6 +93,19 @@ class TorrentSearch(_PluginBase):
 
     def get_state(self) -> bool:
         return self._enabled
+    
+    @staticmethod
+    def exec_shell_command(command) -> str:
+        result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        output = result.stdout.strip()
+        return output
+
+    @staticmethod
+    def re_group1(pattern, s) -> str:
+        rs = re.search(pattern, s)
+        if rs is None:
+            return ''
+        return rs.group(1)
 
     @staticmethod
     def get_command() -> List[Dict[str, Any]]:
@@ -526,7 +543,20 @@ class TorrentSearch(_PluginBase):
                 ]
             } for torrent in torrents
         ]
-
+        # 从前端代码文件中查找需要的代码，比如进度条、弹出框、web请求api
+        # import api: grep -m 1 -o -E "import.{1,20}index4.js\"" /public/site.js
+        # await I.post: grep -o -E -m 1 "await.{0,5}post"  /public/site.js |head -1
+        # import index.js: grep -m 1 -o -E "import\{[^;]+\}from\"./index.js\""  /public/site.js
+        # =xx.useToast(): grep -m 1 -o -E "=.{1,5}useToast\(\)"  /public/site.js|head -1
+        # download: grep -m 1 -o -E "\{.{1,10};.{1,30}download.{200,280}\}\}"  /public/site.js|head -1
+        # {oe();try{const A=await P.post("download/add",l);A.success?r.success(`${l==null?void 0:l.site_name} ${l==null?void 0:l.title} 添加下载成功！`):r.error(`${l==null?void 0:l.site_name} ${l==null?void 0:l.title} 添加下载失败：${A.message||"未知错误"}`)}catch(A){console.error(A)}re()}}
+        code_import_api = TorrentSearch.exec_shell_command('grep -m 1 -o -E "import.{1,20}index4.js\\"" /public/site.js')
+        code_import_toast = TorrentSearch.exec_shell_command('grep -o -E "import\{[^;]+\}from\\"./index.js\\""  /public/site.js')
+        code_use_toast = TorrentSearch.exec_shell_command('grep -m 1 -o -E "=.{1,5}useToast\(\)"  /public/site.js|head -1')
+        code_post = TorrentSearch.exec_shell_command('grep -o -E -m 1 "await.{0,5}post"  /public/site.js |head -1')
+        code_progress = TorrentSearch.exec_shell_command('grep -m 1 -o -E "\{.{1,10};.{1,30}download.{200,280}\}\}"  /public/site.js|head -1')
+        code_progress_start = TorrentSearch.re_group1(self._pattern_progress_start, code_progress)
+        code_progress_end = TorrentSearch.re_group1(self._pattern_progress_end, code_progress)
         # # 拼装页面
         return [
             {
@@ -641,30 +671,30 @@ class TorrentSearch(_PluginBase):
                             'type': 'module',
                             'crossorigin': True
                         },
-                        'text': """
-                            import {a as api} from "./index4.js";
-                            import {ag as ne, ax as re, ay as ie} from "./index.js";
-                            const r = ne.useToast();
-                            async function addDownload(torrent) {
-                                re();
-                                try {
+                        'text': f"""
+                            {code_import_api};
+                            {code_import_toast};
+                            const r {code_use_toast};
+                            async function addDownload(torrent) {{
+                                {code_progress_start};
+                                try {{
                                     
-                                    const rs = await api.post("download/add", torrent);
-                                    rs.success ? r.success(`${torrent == null ? void 0 : torrent.site_name} ${torrent == null ? void 0 : torrent.title} 添加下载成功！`, {duration: 5000}) : r.error(`${torrent == null ? void 0 : torrent.site_name} ${torrent == null ? void 0 : torrent.title} 添加下载失败：${rs.message || "未知错误"}`, {duration: 5000})
-                                } catch (E) {
+                                    const rs = {code_post}("download/add", torrent);
+                                    rs.success ? r.success(`${{torrent == null ? void 0 : torrent.site_name}} ${{torrent == null ? void 0 : torrent.title}} 添加下载成功！`, {{duration: 5000}}) : r.error(`${{torrent == null ? void 0 : torrent.site_name}} ${{torrent == null ? void 0 : torrent.title}} 添加下载失败：${{rs.message || "未知错误"}}`, {{duration: 5000}})
+                                }} catch (E) {{
                                     console.error(E);
-                                }
-                                ie();
-                            };
+                                }}
+                                {code_progress_end};
+                            }};
                             var elements = document.getElementsByClassName("torrent-title-link");
  
-                            for (var i = 0; i < elements.length; i++) {
+                            for (var i = 0; i < elements.length; i++) {{
                                 var element = elements[i];
                                 const torrentData = JSON.parse(element.getAttribute("torrent-data"));
-                                element.addEventListener('click', function() {
+                                element.addEventListener('click', function() {{
                                     addDownload(torrentData);
-                                });
-                            }
+                                }});
+                            }}
                         """
                     },
                     # 自定义样式
