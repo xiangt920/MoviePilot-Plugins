@@ -10,7 +10,7 @@
     "TorrentSearch": {
         "name": "搜索种子",
         "description": "直接搜索指定站点的种子",
-        "version": "1.3", 
+        "version": "1.5", 
         "icon": "Searxng_A.png",
         "author": "Xiang",
         "level": 1

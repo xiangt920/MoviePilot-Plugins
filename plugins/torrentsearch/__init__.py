@@ -1,23 +1,32 @@
 import subprocess
 import json
 import re
+import traceback
 import warnings
 from datetime import datetime, timedelta
 from multiprocessing.dummy import Pool as ThreadPool
 from threading import Lock
 from typing import Optional, Any, List, Dict, Tuple
 
+from fastapi import Depends
 import pytz
 import requests
 from ruamel.yaml import CommentedMap
 
+from app import schemas
+from app.chain.download import DownloadChain
+from app.chain.media import MediaChain
+from app.core.context import MediaInfo, TorrentInfo, Context
 from app.core.event import Event
 from app.core.event import eventmanager
+from app.core.metainfo import MetaInfo
+from app.db.models.user import User
 from app.db.site_oper import SiteOper
+from app.db.userauth import get_current_active_user
 from app.helper.sites import SitesHelper
 from app.log import logger
 from app.plugins import _PluginBase
-from app.schemas.types import EventType, NotificationType
+from app.schemas.types import EventType, MediaType, NotificationType
 from app.chain.search import SearchChain
 from app.utils.string import StringUtils
 
@@ -31,7 +40,7 @@ class TorrentSearch(_PluginBase):
     # 插件图标
     plugin_icon = "Searxng_A.png"
     # 插件版本
-    plugin_version = "1.3"
+    plugin_version = "1.5"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -57,6 +66,7 @@ class TorrentSearch(_PluginBase):
     _notify: bool = False
     _search_sites: list = []
     _search_key: str = ""
+    _download_path: str = ""
 
     def init_plugin(self, config: dict = None):
         self.sites = SitesHelper()
@@ -69,6 +79,7 @@ class TorrentSearch(_PluginBase):
             self._enabled = config.get("enabled")
             self._notify = config.get("notify")
             self._search_key = config.get("search_key")
+            self._download_path = config.get("download_path")
             self._search_sites = config.get("search_sites")
 
             # 过滤掉已删除的站点
@@ -112,7 +123,13 @@ class TorrentSearch(_PluginBase):
         pass
 
     def get_api(self) -> List[Dict[str, Any]]:
-        pass
+        return [{
+            "path": "/download", 
+            "endpoint": self.download, 
+            "methods": ["POST"], 
+            "summary": "下载指定种子", 
+            "description": "搜索种子后下载指定种子", 
+        }]
 
     def get_service(self) -> List[Dict[str, Any]]:
         pass
@@ -122,6 +139,54 @@ class TorrentSearch(_PluginBase):
         退出插件
         """
         pass
+
+    def download(self, torrent_in: schemas.TorrentInfo, current_user: User = Depends(get_current_active_user)):
+
+        # 元数据
+        metainfo = MetaInfo(title=torrent_in.title, subtitle=torrent_in.description)
+        # 媒体信息
+        mediainfo = MediaChain().recognize_media(meta=metainfo)
+        if not mediainfo:
+            if not self._download_path:
+                return schemas.Response(
+                    success=False,
+                    message=f"无法识别媒体信息且下载路径为空"
+                )
+            else:
+                # 虚构媒体信息
+                mediainfo = MediaInfo()
+                mediainfo.category = "其它"
+                mediainfo.type = MediaType.UNKNOWN
+                mediainfo.title = metainfo.title
+
+        
+        logger.info(f"从【{torrent_in.site_name}】站点下载种子【{torrent_in.title}】【{torrent_in.enclosure}】至【{self._download_path}】")
+        
+        # 种子信息
+        torrentinfo = TorrentInfo()
+        torrentinfo.from_dict(torrent_in.dict())
+        # 上下文
+        context = Context(
+            meta_info=metainfo,
+            media_info=mediainfo,
+            torrent_info=torrentinfo
+        )
+        try:
+            # 如果没有设置下载路径，会自动根据识别的媒体信息设置下载路径
+            did = DownloadChain().download_single(
+                context=context, 
+                username=current_user.name, 
+                save_path=self._download_path)
+            return schemas.Response(success=True if did else False, data={
+                "download_id": did
+            })
+        except Exception as e:
+
+            logger.error(traceback.format_exc())
+            return schemas.Response(
+                    success=False,
+                    message=f"下载过程中发生异常: {str(e)}"
+                ) 
 
     def search_torrent(self):
         """
@@ -203,7 +268,8 @@ class TorrentSearch(_PluginBase):
         self.update_config({
             "enabled": self._enabled,
             "search_sites": self._search_sites,
-            "search_key": self._search_key
+            "search_key": self._search_key,
+            "download_path": self._download_path
         })
 
     @eventmanager.register(EventType.SiteDeleted)
@@ -327,6 +393,27 @@ class TorrentSearch(_PluginBase):
                                 ]
                             }
                         ]
+                    },
+                    {
+                        'component': 'VRow',
+                        'content': [
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'download_path',
+                                            'label': '下载路径',
+                                            'placeholder': '种子下载路径'
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
                     }
                     
                 ]
@@ -335,7 +422,8 @@ class TorrentSearch(_PluginBase):
             "enabled": False,
             "notify": True,
             "search_key": "",
-            "search_sites": []
+            "search_sites": [],
+            "download_path": "",
         }
 
     def get_page(self) -> List[dict]:
@@ -679,7 +767,7 @@ class TorrentSearch(_PluginBase):
                                 {code_progress_start};
                                 try {{
                                     
-                                    const rs = {code_post}("download/add", torrent);
+                                    const rs = {code_post}("plugin/TorrentSearch/download", torrent);
                                     rs.success ? r.success(`${{torrent == null ? void 0 : torrent.site_name}} ${{torrent == null ? void 0 : torrent.title}} 添加下载成功！`, {{duration: 5000}}) : r.error(`${{torrent == null ? void 0 : torrent.site_name}} ${{torrent == null ? void 0 : torrent.title}} 添加下载失败：${{rs.message || "未知错误"}}`, {{duration: 5000}})
                                 }} catch (E) {{
                                     console.error(E);
