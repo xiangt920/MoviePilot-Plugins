@@ -40,7 +40,7 @@ class TorrentSearch(_PluginBase):
     # 插件图标
     plugin_icon = "Searxng_A.png"
     # 插件版本
-    plugin_version = "1.5"
+    plugin_version = "1.6"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -220,7 +220,7 @@ class TorrentSearch(_PluginBase):
 
             num_torrent = len(self._torrent_data)
             messages = f"种子搜索完成，共搜索到{num_torrent}个种子" if num_torrent > 0 else "没有搜索到种子数据，请更换站点或搜索关键词"
-            logger.info(f"搜索结果：{self._torrent_data}")
+            # logger.info(f"搜索结果：{self._torrent_data}")
             logger.info(messages)
             # 通知搜索完成
             if self._notify:
@@ -443,11 +443,13 @@ class TorrentSearch(_PluginBase):
             ]
         
         def getVolumeFactorClass(downloadVolume: int, uploadVolume: int):
+            if not downloadVolume:
+                return 'text-white bg-lime-500'
             if (downloadVolume == 0):
                 return 'text-white bg-lime-500'
             elif (downloadVolume < 1):
                 return 'text-white bg-green-500'
-            elif (uploadVolume != 1):
+            elif ((not uploadVolume) or uploadVolume != 1):
                 return 'text-white bg-sky-500'
             else:
                 return 'text-white bg-gray-500'
@@ -506,13 +508,13 @@ class TorrentSearch(_PluginBase):
                         'text': label
                     })
             
-            if torrent.get('downloadvolumefactor' != 1) or torrent.get('uploadvolumefactor') != 1:
+            if torrent.get('downloadvolumefactor') != 1 or torrent.get('uploadvolumefactor') != 1:
                 contents.append({
                     'component': 'VChip',
                     'props': {
                         'variant': 'elevated',
                         'size': 'small',
-                        'class': getVolumeFactorClass(torrent.get('downloadvolumefactor' != 1), torrent.get('uploadvolumefactor'))
+                        'class': getVolumeFactorClass(torrent.get('downloadvolumefactor'), torrent.get('uploadvolumefactor'))
                     },
                     'text': torrent.get('volume_factor')
                 })
