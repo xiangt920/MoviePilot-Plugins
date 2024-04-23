@@ -40,7 +40,7 @@ class TorrentSearch(_PluginBase):
     # 插件图标
     plugin_icon = "Searxng_A.png"
     # 插件版本
-    plugin_version = "1.6"
+    plugin_version = "1.8"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -764,24 +764,25 @@ class TorrentSearch(_PluginBase):
                         'text': f"""
                             {code_import_api};
                             {code_import_toast};
-                            const r {code_use_toast};
+                            const downloadToast {code_use_toast};
                             async function addDownload(torrent) {{
                                 {code_progress_start};
                                 try {{
                                     
-                                    const rs = {code_post}("plugin/TorrentSearch/download", torrent);
-                                    rs.success ? r.success(`${{torrent == null ? void 0 : torrent.site_name}} ${{torrent == null ? void 0 : torrent.title}} 添加下载成功！`, {{duration: 5000}}) : r.error(`${{torrent == null ? void 0 : torrent.site_name}} ${{torrent == null ? void 0 : torrent.title}} 添加下载失败：${{rs.message || "未知错误"}}`, {{duration: 5000}})
-                                }} catch (E) {{
-                                    console.error(E);
+                                    const torrentRs = {code_post}("plugin/TorrentSearch/download", torrent);
+                                    torrentRs.success ? downloadToast.success(`${{torrent == null ? void 0 : torrent.site_name}} ${{torrent == null ? void 0 : torrent.title}} 添加下载成功！`, {{duration: 5000}}) : downloadToast.error(`${{torrent == null ? void 0 : torrent.site_name}} ${{torrent == null ? void 0 : torrent.title}} 添加下载失败：${{torrentRs.message || "未知错误"}}`, {{duration: 5000}})
+                                }} catch (Exp) {{
+                                    console.error(Exp);
                                 }}
                                 {code_progress_end};
                             }};
-                            var elements = document.getElementsByClassName("torrent-title-link");
+                            var torrentElements = document.getElementsByClassName("torrent-title-link");
  
-                            for (var i = 0; i < elements.length; i++) {{
-                                var element = elements[i];
-                                const torrentData = JSON.parse(element.getAttribute("torrent-data"));
-                                element.addEventListener('click', function() {{
+                            for (var torrentIdx = 0; torrentIdx < torrentElements.length; torrentIdx++) {{
+                                var torrentElement = torrentElements[torrentIdx];
+                                const torrentData = JSON.parse(torrentElement.getAttribute("torrent-data"));
+                                torrentElement.removeAttribute("torrent-data");
+                                torrentElement.addEventListener('click', function() {{
                                     addDownload(torrentData);
                                 }});
                             }}
