@@ -43,7 +43,7 @@ class SiteDailyStatistic(_PluginBase):
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "1.6"
+    plugin_version = "1.8"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -585,7 +585,7 @@ class SiteDailyStatistic(_PluginBase):
                                                     {
                                                         'component': 'VImg',
                                                         'props': {
-                                                            'src': '/plugin_icon/upload.png'
+                                                            'src': './plugin_icon/upload.png'
                                                         }
                                                     }
                                                 ]
@@ -655,7 +655,7 @@ class SiteDailyStatistic(_PluginBase):
                                                     {
                                                         'component': 'VImg',
                                                         'props': {
-                                                            'src': '/plugin_icon/download.png'
+                                                            'src': './plugin_icon/download.png'
                                                         }
                                                     }
                                                 ]
@@ -725,7 +725,7 @@ class SiteDailyStatistic(_PluginBase):
                                                     {
                                                         'component': 'VImg',
                                                         'props': {
-                                                            'src': '/plugin_icon/seed.png'
+                                                            'src': './plugin_icon/seed.png'
                                                         }
                                                     }
                                                 ]
@@ -795,7 +795,7 @@ class SiteDailyStatistic(_PluginBase):
                                                     {
                                                         'component': 'VImg',
                                                         'props': {
-                                                            'src': '/plugin_icon/database.png'
+                                                            'src': './plugin_icon/database.png'
                                                         }
                                                     }
                                                 ]
