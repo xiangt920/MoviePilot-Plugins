@@ -1340,9 +1340,10 @@ class SiteDailyStatistic(_PluginBase):
             self.save_data(today_date, self._sites_data)
 
             # 如果是23点58分以后，则更新时间
-            if last_update_time and save:
-                self.save_data("last_update_time", today_date)
-                logger.info(f'保存新的一天的数据，当前时间：{now.strftime("%Y-%m-%d %H:%M:%S")}')
+            if last_update_time:
+                if save:
+                    self.save_data("last_update_time", today_date)
+                    logger.info(f'保存新的一天的数据，当前时间：{now.strftime("%Y-%m-%d %H:%M:%S")}')
             elif self._statistic_type == "add":
                 self.save_data("last_update_time", today_date)
             
