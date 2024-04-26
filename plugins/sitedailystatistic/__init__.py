@@ -43,7 +43,7 @@ class SiteDailyStatistic(_PluginBase):
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "1.8"
+    plugin_version = "2.0"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -70,6 +70,7 @@ class SiteDailyStatistic(_PluginBase):
     _cron: str = ""
     _notify: bool = False
     _queue_cnt: int = 5
+    _remove_failed: bool = False
     _statistic_type: str = None
     _statistic_sites: list = []
 
@@ -87,6 +88,7 @@ class SiteDailyStatistic(_PluginBase):
             self._notify = config.get("notify")
             self._sitemsg = config.get("sitemsg")
             self._queue_cnt = config.get("queue_cnt")
+            self._remove_failed = config.get("remove_failed")
             self._statistic_type = config.get("statistic_type") or "all"
             self._statistic_sites = config.get("statistic_sites") or []
 
@@ -207,7 +209,7 @@ class SiteDailyStatistic(_PluginBase):
             "id": "SiteDailyStatistic00",
                 "name": "站点每日数据统计服务",
                 "trigger": CronTrigger.from_crontab('59 23 * * *'),
-                "func": self.refresh_all_site_data,
+                "func": self.refresh_and_save_all_site_date,
                 "kwargs": {}
         })
         return ret_jobs
@@ -377,7 +379,23 @@ class SiteDailyStatistic(_PluginBase):
                                         }
                                     }
                                 ]
-                            }
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12,
+                                    'md': 4
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VSwitch',
+                                        'props': {
+                                            'model': 'remove_failed',
+                                            'label': '移除失效站点',
+                                        }
+                                    }
+                                ]
+                            },
                         ]
                     }
                 ]
@@ -389,6 +407,7 @@ class SiteDailyStatistic(_PluginBase):
             "sitemsg": True,
             "cron": "5 1 * * *",
             "queue_cnt": 5,
+            "remove_failed": False,
             "statistic_type": "all",
             "statistic_sites": []
         }
@@ -1116,10 +1135,12 @@ class SiteDailyStatistic(_PluginBase):
                 return site_schema(site_name, url, site_cookie, html_text, session=session, ua=ua, proxy=proxy)
             return None
 
-    def refresh_by_domain(self, domain: str) -> schemas.Response:
+    def refresh_by_domain(self, domain: str, apikey: str) -> schemas.Response:
         """
         刷新一个站点数据，可由API调用
         """
+        if apikey != settings.API_TOKEN:
+            return schemas.Response(success=False, message="API密钥错误")
         site_info = self.sites.get_indexer(domain)
         if site_info:
             site_data = self.__refresh_site_data(site_info)
@@ -1187,7 +1208,8 @@ class SiteDailyStatistic(_PluginBase):
                             "bonus": site_user_info.bonus,
                             "url": site_url,
                             "err_msg": site_user_info.err_msg,
-                            "message_unread": site_user_info.message_unread
+                            "message_unread": site_user_info.message_unread,
+                            "updated_at": datetime.now().strftime('%Y-%m-%d')
                         }
                     })
                 return site_user_info
@@ -1234,6 +1256,8 @@ class SiteDailyStatistic(_PluginBase):
         if event:
             self.post_message(channel=event.event_data.get("channel"),
                               title="站点数据刷新完成！", userid=event.event_data.get("user"))
+    def refresh_and_save_all_site_date(self):
+        refresh_all_site_data(True)
 
     def refresh_all_site_data(self, save = False):
         """
@@ -1244,10 +1268,6 @@ class SiteDailyStatistic(_PluginBase):
 
         logger.info("开始刷新站点数据 ...")
 
-        # 获取今天的日期
-        now = datetime.now()
-        key = now.strftime('%Y-%m-%d')
-        
         with lock:
 
             all_sites = [site for site in self.sites.get_indexers() if not site.get("public")] + self.__custom_sites()
@@ -1260,68 +1280,71 @@ class SiteDailyStatistic(_PluginBase):
             if not refresh_sites:
                 return
 
+            # 将数据初始化为前一天，筛选站点
+            yesterday_sites_data = {}
+            today_date = datetime.now().strftime('%Y-%m-%d')
+            if self._statistic_type == "add" or not self._remove_failed:
+                if last_update_time := self.get_data("last_update_time"):
+                    yesterday_sites_data = self.get_data(last_update_time) or {}
+
+            if not self._remove_failed and yesterday_sites_data:
+                site_names = [site.get("name") for site in refresh_sites]
+                self._sites_data = {k: v for k, v in yesterday_sites_data.items() if k in site_names}
+
             # 并发刷新
             with ThreadPool(min(len(refresh_sites), int(self._queue_cnt or 5))) as p:
                 p.map(self.__refresh_site_data, refresh_sites)
 
             # 通知刷新完成
             if self._notify:
-                yesterday_sites_data = {}
-                # 增量数据
-                if self._statistic_type == "add":
-                    last_update_time = self.get_data("last_update_time")
-                    if last_update_time:
-                        yesterday_sites_data = self.get_data(last_update_time) or {}
-
-                messages = []
-                # 按照上传降序排序
-                sites = self._sites_data.keys()
-                uploads = [self._sites_data[site].get("upload") or 0 if not yesterday_sites_data.get(site) else
-                           int(self._sites_data[site].get("upload") or 0) - int(
-                                   yesterday_sites_data[site].get("upload") or 0) for site in sites]
-                downloads = [self._sites_data[site].get("download") or 0 if not yesterday_sites_data.get(site) else
-                             int(self._sites_data[site].get("download") or 0) - int(
-                                     yesterday_sites_data[site].get("download") or 0) for site in sites]
-                data_list = sorted(list(zip(sites, uploads, downloads)),
-                                   key=lambda x: x[1],
-                                   reverse=True)
+                messages = {}
                 # 总上传
                 incUploads = 0
                 # 总下载
                 incDownloads = 0
-                for data in data_list:
-                    site = data[0]
-                    upload = int(data[1])
-                    download = int(data[2])
+
+                for rand, site in enumerate(self._sites_data.keys()):
+                    upload = int(self._sites_data[site].get("upload") or 0)
+                    download = int(self._sites_data[site].get("download") or 0)
+                    updated_date = self._sites_data[site].get("updated_at")
+
+                    if self._statistic_type == "add" and yesterday_sites_data.get(site):
+                        upload -= int(yesterday_sites_data[site].get("upload") or 0)
+                        download -= int(yesterday_sites_data[site].get("download") or 0)
+
+                    if updated_date and updated_date != today_date:
+                        updated_date = f"（{updated_date}）"
+                    else:
+                        updated_date = ""
+
                     if upload > 0 or download > 0:
-                        incUploads += int(upload)
-                        incDownloads += int(download)
-                        messages.append(f"【{site}】\n"
-                                        f"上传量：{StringUtils.str_filesize(upload)}\n"
-                                        f"下载量：{StringUtils.str_filesize(download)}\n"
-                                        f"————————————")
+                        incUploads += upload
+                        incDownloads += download
+                        messages[upload + (rand / 1000)] = (
+                                f"【{site}】{updated_date}\n"
+                                + f"上传量：{StringUtils.str_filesize(upload)}\n"
+                                + f"下载量：{StringUtils.str_filesize(download)}\n"
+                                + "————————————"
+                        )
 
                 if incDownloads or incUploads:
-                    messages.insert(0, f"【汇总】\n"
-                                       f"总上传：{StringUtils.str_filesize(incUploads)}\n"
-                                       f"总下载：{StringUtils.str_filesize(incDownloads)}\n"
-                                       f"————————————")
+                    sorted_messages = [messages[key] for key in sorted(messages.keys(), reverse=True)]
+                    sorted_messages.insert(0, f"【汇总】\n"
+                                              f"总上传：{StringUtils.str_filesize(incUploads)}\n"
+                                              f"总下载：{StringUtils.str_filesize(incDownloads)}\n"
+                                              f"————————————")
                     self.post_message(mtype=NotificationType.SiteMessage,
-                                      title="站点数据统计", text="\n".join(messages))
-                    logger.info("\n".join(messages))
+                                      title="站点数据统计", text="\n".join(sorted_messages))
 
             # 保存数据
-            self.save_data(key, self._sites_data)
+            self.save_data(today_date, self._sites_data)
 
             # 如果是23点58分以后，则更新时间
-            if last_update_time:
-                tomorrow = datetime.combine(now.date() + timedelta(days=1), datetime.min.time())
-                delta = tomorrow - now
-                if delta.total_seconds() <= 120:
-                    self.save_data("last_update_time", key)
-                    logger.info(f'保存新的一天的数据，当前时间：{now.strftime("%Y-%m-%d %H:%M:%S")}')
+            if last_update_time and save:
+                self.save_data("last_update_time", today_date)
+                logger.info(f'保存新的一天的数据，当前时间：{now.strftime("%Y-%m-%d %H:%M:%S")}')
             elif self._statistic_type == "add":
-                self.save_data("last_update_time", key)
+                self.save_data("last_update_time", today_date)
             
             logger.info("站点数据刷新完成")
 
@@ -1340,6 +1363,7 @@ class SiteDailyStatistic(_PluginBase):
             "notify": self._notify,
             "sitemsg": self._sitemsg,
             "queue_cnt": self._queue_cnt,
+            "remove_failed": self._remove_failed,
             "statistic_type": self._statistic_type,
             "statistic_sites": self._statistic_sites,
         })
