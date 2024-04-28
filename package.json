@@ -18,9 +18,9 @@
     "SiteDailyStatistic": {
         "name": "站点每日数据统计",
         "description": "自动统计和展示当天累计站点数据",
-        "version": "2.0",
+        "version": "2.1",
         "icon": "Collabora_A.png",
         "author": "Xiang",
-        "level": 2
+        "level": 1
     }
 }

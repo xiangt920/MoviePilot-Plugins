@@ -43,7 +43,7 @@ class SiteDailyStatistic(_PluginBase):
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "2.0"
+    plugin_version = "2.1"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -1257,7 +1257,7 @@ class SiteDailyStatistic(_PluginBase):
             self.post_message(channel=event.event_data.get("channel"),
                               title="站点数据刷新完成！", userid=event.event_data.get("user"))
     def refresh_and_save_all_site_date(self):
-        refresh_all_site_data(True)
+        self.refresh_all_site_data(True)
 
     def refresh_all_site_data(self, save = False):
         """
@@ -1265,6 +1265,7 @@ class SiteDailyStatistic(_PluginBase):
         """
         if not self.sites.get_indexers():
             return
+        today_date = datetime.now().strftime('%Y-%m-%d')
 
         logger.info("开始刷新站点数据 ...")
 
@@ -1282,7 +1283,7 @@ class SiteDailyStatistic(_PluginBase):
 
             # 将数据初始化为前一天，筛选站点
             yesterday_sites_data = {}
-            today_date = datetime.now().strftime('%Y-%m-%d')
+            
             if self._statistic_type == "add" or not self._remove_failed:
                 if last_update_time := self.get_data("last_update_time"):
                     yesterday_sites_data = self.get_data(last_update_time) or {}
