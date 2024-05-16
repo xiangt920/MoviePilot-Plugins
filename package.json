@@ -18,11 +18,12 @@
     "SiteDailyStatistic": {
         "name": "站点每日数据统计",
         "description": "自动统计和展示当天累计站点数据",
-        "version": "2.3",
+        "version": "2.4",
         "icon": "Collabora_A.png",
         "author": "Xiang",
         "level": 1,
         "history": {
+            "v2.4": "修复保存时间时打印日志报错",
             "v2.3": "支持仪表板组件",
             "v2.2": "支持当天累积统计数据"
         }
