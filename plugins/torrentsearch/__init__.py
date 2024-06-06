@@ -40,7 +40,7 @@ class TorrentSearch(_PluginBase):
     # 插件图标
     plugin_icon = "Searxng_A.png"
     # 插件版本
-    plugin_version = "1.8"
+    plugin_version = "1.9"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -246,7 +246,7 @@ class TorrentSearch(_PluginBase):
             torrents = SearchChain().search_by_title(self._search_key, i, site_id)
             num_torrents = len(torrents)
             if num_torrents > 0:
-                self._torrent_data.extend([t.to_dict() for t in torrents])
+                self._torrent_data.extend([t.to_dict().get('torrent_info') for t in torrents])
                 
             if num_torrents > 0 and (num_torrents % 10) == 0:
                 # 如果当前页返回的种子数目大于0且不能被10整除，那么继续搜索下一页
@@ -640,7 +640,7 @@ class TorrentSearch(_PluginBase):
         # =xx.useToast(): grep -m 1 -o -E "=.{1,5}useToast\(\)"  /public/site.js|head -1
         # download: grep -m 1 -o -E "\{.{1,10};.{1,30}download.{200,280}\}\}"  /public/site.js|head -1
         # {oe();try{const A=await P.post("download/add",l);A.success?r.success(`${l==null?void 0:l.site_name} ${l==null?void 0:l.title} 添加下载成功！`):r.error(`${l==null?void 0:l.site_name} ${l==null?void 0:l.title} 添加下载失败：${A.message||"未知错误"}`)}catch(A){console.error(A)}re()}}
-        code_import_api = TorrentSearch.exec_shell_command('grep -m 1 -o -E "import.{1,20}index4.js\\"" /public/site.js')
+        # code_import_api = TorrentSearch.exec_shell_command('grep -m 1 -o -E "import.{1,20}index4.js\\"" /public/site.js')
         code_import_toast = TorrentSearch.exec_shell_command('grep -o -E "import\{[^;]+\}from\\"./index.js\\""  /public/site.js')
         code_use_toast = TorrentSearch.exec_shell_command('grep -m 1 -o -E "=.{1,5}useToast\(\)"  /public/site.js|head -1')
         code_post = TorrentSearch.exec_shell_command('grep -o -E -m 1 "await.{0,5}post"  /public/site.js |head -1')
@@ -762,7 +762,6 @@ class TorrentSearch(_PluginBase):
                             'crossorigin': True
                         },
                         'text': f"""
-                            {code_import_api};
                             {code_import_toast};
                             const downloadToast {code_use_toast};
                             async function addDownload(torrent) {{

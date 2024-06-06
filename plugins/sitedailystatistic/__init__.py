@@ -43,7 +43,7 @@ class SiteDailyStatistic(_PluginBase):
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "2.4"
+    plugin_version = "2.5"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -544,7 +544,7 @@ class SiteDailyStatistic(_PluginBase):
                                                 {
                                                     'component': 'VImg',
                                                     'props': {
-                                                        'src': '/plugin_icon/upload.png'
+                                                        'src': './plugin_icon/upload.png'
                                                     }
                                                 }
                                             ]
@@ -613,7 +613,7 @@ class SiteDailyStatistic(_PluginBase):
                                                 {
                                                     'component': 'VImg',
                                                     'props': {
-                                                        'src': '/plugin_icon/download.png'
+                                                        'src': './plugin_icon/download.png'
                                                     }
                                                 }
                                             ]
@@ -682,7 +682,7 @@ class SiteDailyStatistic(_PluginBase):
                                                 {
                                                     'component': 'VImg',
                                                     'props': {
-                                                        'src': '/plugin_icon/seed.png'
+                                                        'src': './plugin_icon/seed.png'
                                                     }
                                                 }
                                             ]
@@ -751,7 +751,7 @@ class SiteDailyStatistic(_PluginBase):
                                                 {
                                                     'component': 'VImg',
                                                     'props': {
-                                                        'src': '/plugin_icon/database.png'
+                                                        'src': './plugin_icon/database.png'
                                                     }
                                                 }
                                             ]
@@ -1141,12 +1141,12 @@ class SiteDailyStatistic(_PluginBase):
         """
         构建站点信息
         """
-        site_cookie = site_info.get("cookie")
-        if not site_cookie:
-            return None
         site_name = site_info.get("name")
+        site_cookie = site_info.get("cookie")
         apikey = site_info.get("apikey")
         token = site_info.get("token")
+        if not site_cookie and not apikey and not token:
+            return None
         url = site_info.get("url")
         proxy = site_info.get("proxy")
         ua = site_info.get("ua")
@@ -1155,8 +1155,7 @@ class SiteDailyStatistic(_PluginBase):
             proxies = settings.PROXY if proxy else None
             proxy_server = settings.PROXY_SERVER if proxy else None
             render = site_info.get("render")
-
-            logger.debug(f"站点 {site_name} url={url} site_cookie={site_cookie} ua={ua}")
+            logger.debug(f"站点 {site_name} url={url}，site_cookie={site_cookie}，ua={ua}，api_key={apikey}，token={token}，proxy={proxy}")
             if render:
                 # 演染模式
                 html_text = PlaywrightHelper().get_page_source(url=url,
@@ -1456,8 +1455,14 @@ class SiteDailyStatistic(_PluginBase):
                 if save:
                     self.save_data("last_update_time", today_date)
                     logger.info(f'保存新的一天的数据，当前时间：{now.strftime("%Y-%m-%d %H:%M:%S")}')
+                    self.eventmanager.send_event(etype=EventType.PluginAction, data={
+                        "action": "sitedailystatistic_refresh_complete"
+                    })
             elif self._statistic_type == "add":
                 self.save_data("last_update_time", today_date)
+                self.eventmanager.send_event(etype=EventType.PluginAction, data={
+                    "action": "sitedailystatistic_refresh_complete"
+                })
             
             logger.info("站点数据刷新完成")
 
