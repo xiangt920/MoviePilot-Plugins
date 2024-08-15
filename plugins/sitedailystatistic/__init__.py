@@ -14,8 +14,7 @@ from ruamel.yaml import CommentedMap
 
 from app import schemas
 from app.core.config import settings
-from app.core.event import Event
-from app.core.event import eventmanager
+from app.core.event import Event, eventmanager
 from app.db.models import PluginData
 from app.db.site_oper import SiteOper
 from app.helper.browser import PlaywrightHelper
@@ -43,7 +42,7 @@ class SiteDailyStatistic(_PluginBase):
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "2.5"
+    plugin_version = "3.0"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -939,6 +938,12 @@ class SiteDailyStatistic(_PluginBase):
         拼装插件详情页面，需要返回页面配置，同时附带数据
         """
 
+        def format_bonus(bonus):
+            try:
+                return f'{float(bonus):,.1f}'
+            except ValueError:
+                return '0.0'
+
         # 获取数据
         today, stattistic_data, yesterday_sites_data = self.__get_data()
         if not stattistic_data:
@@ -1003,7 +1008,7 @@ class SiteDailyStatistic(_PluginBase):
                     },
                     {
                         'component': 'td',
-                        'text': '{:,.1f}'.format(data.get('bonus') or 0)
+                        'text': format_bonus(data.get('bonus') or 0)
                     },
                     {
                         'component': 'td',
@@ -1207,19 +1212,21 @@ class SiteDailyStatistic(_PluginBase):
 
                     # 兼容假首页情况，假首页通常没有 <link rel="search" 属性
                     if '"search"' not in html_text and '"csrf-token"' not in html_text:
-                        res = RequestUtils(cookies=site_cookie,
-                                           session=session,
-                                           ua=ua,
-                                           proxies=proxies
-                                           ).get_res(url=url + "/index.php")
-                        if res and res.status_code == 200:
-                            if re.search(r"charset=\"?utf-8\"?", res.text, re.IGNORECASE):
-                                res.encoding = "utf-8"
-                            else:
-                                res.encoding = res.apparent_encoding
-                            html_text = res.text
-                            if not html_text:
-                                return None
+                        # 排除掉单页面应用，单页面应用首页包含一个 div 容器
+                        if not re.search(r"id=\"?root\"?", res.text, re.IGNORECASE):
+                            res = RequestUtils(cookies=site_cookie,
+                                               session=session,
+                                               ua=ua,
+                                               proxies=proxies
+                                               ).get_res(url=url + "/index.php")
+                            if res and res.status_code == 200:
+                                if re.search(r"charset=\"?utf-8\"?", res.text, re.IGNORECASE):
+                                    res.encoding = "utf-8"
+                                else:
+                                    res.encoding = res.apparent_encoding
+                                html_text = res.text
+                                if not html_text:
+                                    return None
                 elif res is not None:
                     logger.error(f"站点 {site_name} 连接失败，状态码：{res.status_code}")
                     return None
@@ -1230,7 +1237,7 @@ class SiteDailyStatistic(_PluginBase):
             if html_text:
                 site_schema = self.__build_class(html_text)
                 if not site_schema:
-                    logger.error("站点 %s 无法识别站点类型" % site_name)
+                    logger.error(f"站点 {site_name} 无法识别站点类型，可能是由于插件代码不全，请尝试强制重装插件以确保代码完整")
                     return None
                 return site_schema(
                     site_name=site_name,
