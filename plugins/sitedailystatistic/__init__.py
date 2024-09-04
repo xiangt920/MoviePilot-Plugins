@@ -42,7 +42,7 @@ class SiteDailyStatistic(_PluginBase):
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "3.0"
+    plugin_version = "3.1"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -982,29 +982,29 @@ class SiteDailyStatistic(_PluginBase):
                     },
                     {
                         'component': 'td',
-                        'text': data.get("username")
+                        'text': data.get("username") or "未知"
                     },
                     {
                         'component': 'td',
-                        'text': data.get("user_level")
+                        'text': data.get("user_level") or "未知"
                     },
                     {
                         'component': 'td',
                         'props': {
                             'class': 'text-success'
                         },
-                        'text': StringUtils.str_filesize(data.get("upload"))
+                        'text': StringUtils.str_filesize(data.get("upload") or 0)
                     },
                     {
                         'component': 'td',
                         'props': {
                             'class': 'text-error'
                         },
-                        'text': StringUtils.str_filesize(data.get("download"))
+                        'text': StringUtils.str_filesize(data.get("download") or 0)
                     },
                     {
                         'component': 'td',
-                        'text': data.get('ratio')
+                        'text': data.get('ratio') or 0
                     },
                     {
                         'component': 'td',
@@ -1012,14 +1012,14 @@ class SiteDailyStatistic(_PluginBase):
                     },
                     {
                         'component': 'td',
-                        'text': data.get('seeding')
+                        'text': data.get('seeding') or 0
                     },
                     {
                         'component': 'td',
-                        'text': StringUtils.str_filesize(data.get('seeding_size'))
+                        'text': StringUtils.str_filesize(data.get('seeding_size') or 0)
                     }
                 ]
-            } for site, data in stattistic_data.items() if not data.get("err_msg")
+            } for site, data in stattistic_data.items()
         ]
 
         # 拼装页面
@@ -1296,7 +1296,10 @@ class SiteDailyStatistic(_PluginBase):
 
                 # 获取不到数据时，仅返回错误信息，不做历史数据更新
                 if site_user_info.err_msg:
-                    self._sites_data.update({site_name: {"err_msg": site_user_info.err_msg}})
+                    if site_name in self._sites_data:
+                        self._sites_data[site_name].update({"err_msg": site_user_info.err_msg})
+                    else:
+                        self._sites_data.update({site_name: {"err_msg": site_user_info.err_msg}})
                     return None
 
                 if self._sitemsg:
