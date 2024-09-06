@@ -22,11 +22,12 @@
     "SiteDailyStatistic": {
         "name": "站点每日数据统计",
         "description": "自动统计和展示当天累计站点数据",
-        "version": "3.1",
+        "version": "3.2",
         "icon": "Collabora_A.png",
         "author": "Xiang",
         "level": 1,
         "history": {
+            "v3.2": "修复无法获取数据时会丢失当天已获取数据的问题",
             "v3.1": "修复无法获取数据时丢失站点历史数据的问题",
             "v3.0": "魔力值容错",
             "v2.5": "支持站点数据统计刷新后触发插件事件",
