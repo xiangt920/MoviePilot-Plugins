@@ -42,7 +42,7 @@ class SiteDailyStatistic(_PluginBase):
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "3.2"
+    plugin_version = "3.3"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -1408,7 +1408,7 @@ class SiteDailyStatistic(_PluginBase):
                 if last_update_time := self.get_data("last_update_time"):
                     yesterday_sites_data = self.get_data(last_update_time) or {}
 
-            old_sites_data = self._sites_data
+            old_sites_data = self.get_data(today_date) or {}
             if not self._remove_failed and yesterday_sites_data:
                 site_names = [site.get("name") for site in refresh_sites]
                 self._sites_data = {k: v for k, v in yesterday_sites_data.items() if k in site_names}
