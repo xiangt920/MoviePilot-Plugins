@@ -42,7 +42,7 @@ class SiteDailyStatistic(_PluginBase):
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "3.3"
+    plugin_version = "3.4"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -1401,25 +1401,23 @@ class SiteDailyStatistic(_PluginBase):
             if not refresh_sites:
                 return
 
-            # 将数据初始化为前一天，筛选站点
+            # 读取前一天数据，用于计算增量
             yesterday_sites_data = {}
             
             if self._statistic_type == "add" or not self._remove_failed:
                 if last_update_time := self.get_data("last_update_time"):
                     yesterday_sites_data = self.get_data(last_update_time) or {}
 
+            # 将数据初始化为上次更新的数据，筛选站点
             old_sites_data = self.get_data(today_date) or {}
-            if not self._remove_failed and yesterday_sites_data:
+            if not self._remove_failed and old_sites_data:
                 site_names = [site.get("name") for site in refresh_sites]
-                self._sites_data = {k: v for k, v in yesterday_sites_data.items() if k in site_names}
+                self._sites_data = {k: v for k, v in old_sites_data.items() if k in site_names}
 
             # 并发刷新
             with ThreadPool(min(len(refresh_sites), int(self._queue_cnt or 5))) as p:
                 p.map(self.__refresh_site_data, refresh_sites)
 
-            for k, v in old_sites_data.items():
-                if k in site_names:
-                    self._sites_data.setdefault(k, v)
             # 通知刷新完成
             if self._notify:
                 messages = {}

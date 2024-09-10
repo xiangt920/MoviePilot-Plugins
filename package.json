@@ -22,11 +22,12 @@
     "SiteDailyStatistic": {
         "name": "站点每日数据统计",
         "description": "自动统计和展示当天累计站点数据",
-        "version": "3.3",
+        "version": "3.4",
         "icon": "Collabora_A.png",
         "author": "Xiang",
         "level": 1,
         "history": {
+            "v3.4": "修改初始化数据为上次更新数据而不是昨天数据",
             "v3.3": "读取已保存的当天数据",
             "v3.2": "修复无法获取数据时会丢失当天已获取数据的问题",
             "v3.1": "修复无法获取数据时丢失站点历史数据的问题",
