@@ -16,7 +16,7 @@ class XiangChatMsg(_PluginBase):
     # 插件图标
     plugin_icon = "Rocketchat_A.png"
     # 插件版本
-    plugin_version = "1.3"
+    plugin_version = "1.4"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -27,12 +27,15 @@ class XiangChatMsg(_PluginBase):
     plugin_order = 30
     # 可使用的用户级别
     auth_level = 1
+    # 换行符替换正则
+    new_line_after_2space_pattern = re.compile(' *\n')
 
     # 私有属性
     _enabled = False
     _server = None
     _apikey = None
     _msgtypes = []
+    _breaks = False # convert '\n' to "  \n"(add two spaces)
 
     def init_plugin(self, config: dict = None):
         if config:
@@ -40,6 +43,7 @@ class XiangChatMsg(_PluginBase):
             self._msgtypes = config.get("msgtypes") or []
             self._server = config.get("server")
             self._apikey = config.get("apikey")
+            self._breaks = config.get("breaks")
 
     def get_state(self) -> bool:
         return self._enabled and (True if self._server and self._apikey else False)
@@ -81,6 +85,22 @@ class XiangChatMsg(_PluginBase):
                                         'props': {
                                             'model': 'enabled',
                                             'label': '启用插件',
+                                        }
+                                    }
+                                ]
+                            }, 
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12,
+                                    'md': 6
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VSwitch',
+                                        'props': {
+                                            'model': 'breaks',
+                                            'label': '硬换行',
                                         }
                                     }
                                 ]
@@ -155,7 +175,8 @@ class XiangChatMsg(_PluginBase):
             "enabled": False,
             'msgtypes': [],
             'server': 'https://api.day.app',
-            'apikey': ''
+            'apikey': '',
+            'breaks': False
         }
 
     def get_page(self) -> List[dict]:
@@ -201,6 +222,9 @@ class XiangChatMsg(_PluginBase):
                     rc_text = "# %s \n" % title
             if text:
                 rc_text = "%s%s \n" % (rc_text, text)
+            if _breaks:
+                trim_text = new_line_after_2space_pattern.sub('\n', rc_text)
+                rc_text = str.replace(trim_text, '\n', '  \n')
             rc_data = {
                 "text": rc_text
             }
