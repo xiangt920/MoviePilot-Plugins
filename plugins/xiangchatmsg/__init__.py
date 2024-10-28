@@ -17,7 +17,7 @@ class XiangChatMsg(_PluginBase):
     # 插件图标
     plugin_icon = "Rocketchat_A.png"
     # 插件版本
-    plugin_version = "1.6"
+    plugin_version = "1.7"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -224,7 +224,7 @@ class XiangChatMsg(_PluginBase):
                     rc_text = "# %s \n" % title
             if text:
                 rc_text = "%s%s \n" % (rc_text, text)
-            if _breaks:
+            if self._breaks:
                 trim_text = new_line_after_2space_pattern.sub('\n', rc_text)
                 rc_text = str.replace(trim_text, '\n', '  \n')
             rc_data = {
