@@ -43,7 +43,7 @@ class XiangChatMsg(_PluginBase):
             self._msgtypes = config.get("msgtypes") or []
             self._server = config.get("server")
             self._apikey = config.get("apikey")
-            self._breaks = config.get("breaks")
+            self._breaks = config.get("breaks") or False
 
     def get_state(self) -> bool:
         return self._enabled and (True if self._server and self._apikey else False)
@@ -173,10 +173,10 @@ class XiangChatMsg(_PluginBase):
             }
         ], {
             "enabled": False,
+            'breaks': False,
             'msgtypes': [],
             'server': 'https://api.day.app',
-            'apikey': '',
-            'breaks': False
+            'apikey': ''
         }
 
     def get_page(self) -> List[dict]:
