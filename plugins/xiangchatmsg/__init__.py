@@ -6,6 +6,7 @@ from app.log import logger
 from app.plugins import _PluginBase
 from app.schemas.types import EventType, NotificationType
 from app.utils.http import RequestUtils
+import re
 
 
 class XiangChatMsg(_PluginBase):
@@ -16,7 +17,7 @@ class XiangChatMsg(_PluginBase):
     # 插件图标
     plugin_icon = "Rocketchat_A.png"
     # 插件版本
-    plugin_version = "1.5"
+    plugin_version = "1.6"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -35,7 +36,8 @@ class XiangChatMsg(_PluginBase):
     _server = None
     _apikey = None
     _msgtypes = []
-    _breaks = False # convert '\n' to "  \n"(add two spaces)
+    # convert '\n' to "  \n"(add two spaces)
+    _breaks = False 
 
     def init_plugin(self, config: dict = None):
         if config:
