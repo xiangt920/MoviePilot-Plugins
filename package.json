@@ -2,13 +2,14 @@
     "XiangChatMsg": {
         "name": "XiangChat消息通知",
         "description": "Xiang.Chat消息推送。",
-        "version": "1.7",
+        "version": "1.8",
         "icon": "Rocketchat_A.png",
         "author": "Xiang",
         "level": 1,
         "history": {
             "v1.3": "支持消息发送至webhook",
-            "v1.7": "支持markdown硬换行"
+            "v1.7": "支持markdown硬换行",
+            "v1.8": "配置页面对齐"
         }
     },
     "TorrentSearch": {
