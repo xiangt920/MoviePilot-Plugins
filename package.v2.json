@@ -1,0 +1,48 @@
+{
+    "XiangChatMsg": {
+        "name": "XiangChat消息通知",
+        "description": "Xiang.Chat消息推送。",
+        "version": "1.9",
+        "icon": "Rocketchat_A.png",
+        "author": "Xiang",
+        "level": 1,
+        "history": {
+            "v1.3": "支持消息发送至webhook",
+            "v1.7": "支持markdown硬换行",
+            "v1.8": "配置页面对齐",
+            "v1.9": "修复问题"
+        }
+    },
+    "TorrentSearch": {
+        "name": "搜索种子",
+        "description": "直接搜索指定站点的种子",
+        "version": "1.9", 
+        "icon": "Searxng_A.png",
+        "author": "Xiang",
+        "level": 1,
+        "history": {
+            "v1.9": "适配1.9.3",
+            "v1.8": "支持按标题搜索各个站点种子"
+        }
+    },
+    "SiteDailyStatistic": {
+        "name": "站点每日数据统计",
+        "description": "自动统计和展示当天累计站点数据",
+        "version": "3.5",
+        "icon": "Collabora_A.png",
+        "author": "Xiang",
+        "level": 1,
+        "history": {
+            "v3.5": "支持v2",
+            "v3.4": "修改初始化数据为上次更新数据而不是昨天数据",
+            "v3.3": "读取已保存的当天数据",
+            "v3.2": "修复无法获取数据时会丢失当天已获取数据的问题",
+            "v3.1": "修复无法获取数据时丢失站点历史数据的问题",
+            "v3.0": "魔力值容错",
+            "v2.5": "支持站点数据统计刷新后触发插件事件",
+            "v2.4": "修复保存时间时打印日志报错",
+            "v2.3": "支持仪表板组件",
+            "v2.2": "支持当天累积统计数据"
+        }
+    }
+}
