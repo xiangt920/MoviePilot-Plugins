@@ -1,22 +1,21 @@
-import time
 import warnings
 from datetime import datetime, timedelta
 from threading import Lock
 from typing import Optional, Any, List, Dict, Tuple
 
 import pytz
+from app.helper.sites import SitesHelper
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from app import schemas
 from app.chain.site import SiteChain
 from app.core.config import settings
-from app.core.event import Event, eventmanager
+from app.core.event import eventmanager, Event
 from app.db.models.siteuserdata import SiteUserData
 from app.db.site_oper import SiteOper
-from app.helper.sites import SitesHelper
 from app.log import logger
 from app.plugins import _PluginBase
-from app.schemas.types import EventType
+from app.schemas.types import EventType, NotificationType
 from app.utils.string import StringUtils
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -28,11 +27,11 @@ class SiteDailyStatistic(_PluginBase):
     # 插件名称
     plugin_name = "站点每日数据统计"
     # 插件描述
-    plugin_desc = "自动统计和展示当天累计站点数据"
+    plugin_desc = "站点统计数据图表及当天累计站点数据通知"
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "3.5"
+    plugin_version = "3.6"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -40,21 +39,24 @@ class SiteDailyStatistic(_PluginBase):
     # 插件配置项ID前缀
     plugin_config_prefix = "sitedailystatistic_"
     # 加载顺序
-    plugin_order = 2
+    plugin_order = 1
     # 可使用的用户级别
     auth_level = 2
 
     # 配置属性
     siteoper = None
     siteshelper = None
+    sitechain = None
     _enabled: bool = False
     _onlyonce: bool = False
     _dashboard_type: str = "today"
+    _notify_type = ""
     _scheduler = None
 
     def init_plugin(self, config: dict = None):
         self.siteoper = SiteOper()
         self.siteshelper = SitesHelper()
+        self.sitechain = SiteChain()
 
         # 停止现有任务
         self.stop_service()
@@ -64,11 +66,12 @@ class SiteDailyStatistic(_PluginBase):
             self._enabled = config.get("enabled")
             self._onlyonce = config.get("onlyonce")
             self._dashboard_type = config.get("dashboard_type") or "today"
+            self._notify_type = config.get("notify_type") or ""
 
         if self._onlyonce:
             config["onlyonce"] = False
             self._scheduler = BackgroundScheduler(timezone=settings.TZ)
-            self._scheduler.add_job(self.refresh, "date",
+            self._scheduler.add_job(self.sitechain.refresh_userdatas, "date",
                                     run_date=datetime.now(tz=pytz.timezone(settings.TZ)) + timedelta(seconds=3),
                                     name="站点数据统计服务")
             self._scheduler.print_jobs()
@@ -80,19 +83,7 @@ class SiteDailyStatistic(_PluginBase):
 
     @staticmethod
     def get_command() -> List[Dict[str, Any]]:
-        """
-        定义远程控制命令
-        :return: 命令关键字、事件、描述、附带数据
-        """
-        return [{
-            "cmd": "/site_daily_statistic",
-            "event": EventType.PluginAction,
-            "desc": "站点每日数据统计",
-            "category": "站点",
-            "data": {
-                "action": "site_daily_statistic"
-            }
-        }]
+        pass
 
     def get_api(self) -> List[Dict[str, Any]]:
         """
@@ -105,15 +96,24 @@ class SiteDailyStatistic(_PluginBase):
         }]
         """
         return [{
-            "path": "/refresh_by_domain_daily",
+            "path": "/refresh_daily_by_domain",
             "endpoint": self.refresh_by_domain,
             "methods": ["GET"],
-            "summary": "刷新每日站点数据",
-            "description": "刷新对应域名的站点每日数据",
+            "summary": "刷新站点今日数据",
+            "description": "刷新对应域名的站点今日数据",
         }]
 
     def get_service(self) -> List[Dict[str, Any]]:
-        pass
+        ret_jobs = []
+        # 添加一个每日0点的统计任务，仅在该任务中保存数据
+        ret_jobs.append({
+            "id": "SiteDailyStatistic00",
+                "name": "站点每日数据统计服务",
+                "trigger": CronTrigger.from_crontab('59 23 * * *'),
+                "func": self.refresh_all_sites,
+                "kwargs": {}
+        })
+        return ret_jobs
 
     def get_form(self) -> Tuple[List[dict], Dict[str, Any]]:
         """
@@ -183,6 +183,27 @@ class SiteDailyStatistic(_PluginBase):
                                         }
                                     }
                                 ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12,
+                                    'md': 6
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VSelect',
+                                        'props': {
+                                            'model': 'notify_type',
+                                            'label': '数据刷新时发送通知',
+                                            'items': [
+                                                {'title': '不发送', 'value': ''},
+                                                {'title': '今日增量数据', 'value': 'inc'},
+                                                {'title': '累计全量数据', 'value': 'all'}
+                                            ]
+                                        }
+                                    }
+                                ]
                             }
                         ]
                     }
@@ -193,6 +214,62 @@ class SiteDailyStatistic(_PluginBase):
             "onlyonce": False,
             "dashboard_type": 'today'
         }
+
+    @eventmanager.register(EventType.SiteRefreshed)
+    def send_msg(self, event: Event):
+        """
+        站点数据刷新事件时发送消息
+        """
+        if not self._notify_type:
+            return
+        if event.event_data.get('site_id') != "*":
+            return
+        # 获取站点数据
+        today, today_data, yesterday_data = self.__get_data()
+        # 转换为字典
+        today_data_dict = {data.name: data for data in today_data}
+        yesterday_data_dict = {data.name: data for data in yesterday_data}
+        # 消息内容
+        messages = {}
+        # 总上传
+        incUploads = 0
+        # 总下载
+        incDownloads = 0
+        # 今天的日期
+        today_date = datetime.now().strftime("%Y-%m-%d")
+
+        for rand, site in enumerate(today_data_dict.keys()):
+            upload = int(today_data_dict[site].upload or 0)
+            download = int(today_data_dict[site].download or 0)
+            updated_date = today_data_dict[site].updated_day
+
+            if self._notify_type == "inc" and yesterday_data_dict.get(site):
+                upload -= int(yesterday_data_dict[site].upload or 0)
+                download -= int(yesterday_data_dict[site].download or 0)
+
+            if updated_date and updated_date != today_date:
+                updated_date = f"（{updated_date}）"
+            else:
+                updated_date = ""
+
+            if upload > 0 or download > 0:
+                incUploads += upload
+                incDownloads += download
+                messages[upload + (rand / 1000)] = (
+                        f"【{site}】{updated_date}\n"
+                        + f"上传量：{StringUtils.str_filesize(upload)}\n"
+                        + f"下载量：{StringUtils.str_filesize(download)}\n"
+                        + "————————————"
+                )
+
+        if incDownloads or incUploads:
+            sorted_messages = [messages[key] for key in sorted(messages.keys(), reverse=True)]
+            sorted_messages.insert(0, f"【汇总】\n"
+                                      f"总上传：{StringUtils.str_filesize(incUploads)}\n"
+                                      f"总下载：{StringUtils.str_filesize(incDownloads)}\n"
+                                      f"————————————")
+            self.post_message(mtype=NotificationType.SiteMessage,
+                              title="站点数据统计", text="\n".join(sorted_messages))
 
     def __get_data(self) -> Tuple[str, List[SiteUserData], List[SiteUserData]]:
         """
@@ -246,6 +323,18 @@ class SiteDailyStatistic(_PluginBase):
                 return value.isdigit()
             return False
 
+        def __to_numeric(value: any) -> int:
+            """
+            将值转换为整数
+            """
+            if isinstance(value, str):
+                return int(float(value))
+            elif isinstance(value, float) or isinstance(value, int):
+                return int(value)
+            else:
+                logger.error(f'数据类型转换错误 ({value})')
+                return 0
+
         def __sub_data(d1: dict, d2: dict) -> dict:
             """
             计算两个字典相同Key值的差值（如果值为数字），返回新字典
@@ -254,7 +343,7 @@ class SiteDailyStatistic(_PluginBase):
                 return {}
             if not d2:
                 return d1
-            d = {k: d1.get(k) - d2.get(k) for k in d1
+            d = {k: __to_numeric(d1.get(k)) - __to_numeric(d2.get(k)) for k in d1
                  if k in d2 and __is_digit(d1.get(k)) and __is_digit(d2.get(k))}
             # 把小于0的数据变成0
             for k, v in d.items():
@@ -887,25 +976,14 @@ class SiteDailyStatistic(_PluginBase):
         ]
 
     def stop_service(self):
-        pass
-
-    @eventmanager.register(EventType.PluginAction)
-    def refresh(self, event: Optional[Event] = None):
-        """
-        刷新站点数据
-        """
-        if event:
-            event_data = event.event_data
-            if not event_data or event_data.get("action") != "site_daily_statistic":
-                return
-            logger.info("收到命令，开始刷新站点数据 ...")
-            self.post_message(channel=event.event_data.get("channel"),
-                              title="开始刷新站点数据 ...",
-                              userid=event.event_data.get("user"))
-        SiteChain().refresh_userdatas()
-        if event:
-            self.post_message(channel=event.event_data.get("channel"),
-                              title="站点数据刷新完成！", userid=event.event_data.get("user"))
+        try:
+            if self._scheduler:
+                self._scheduler.remove_all_jobs()
+                if self._scheduler.running:
+                    self._scheduler.shutdown()
+                self._scheduler = None
+        except Exception as e:
+            logger.error("退出插件失败：%s" % str(e))
 
     def refresh_by_domain(self, domain: str, apikey: str) -> schemas.Response:
         """
@@ -930,3 +1008,6 @@ class SiteDailyStatistic(_PluginBase):
             success=False,
             message=f"站点 {domain} 不存在"
         )
+    
+    def refresh_all_sites(self):
+        self.sitechain.refresh_userdatas()
