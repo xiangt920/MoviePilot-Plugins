@@ -13,6 +13,7 @@ from app.chain.site import SiteChain
 from app.core.config import settings
 from app.core.event import eventmanager, Event
 from app.db.models.siteuserdata import SiteUserData
+from app.schemas import SiteUserData as SSiteUserData
 from app.db.site_oper import SiteOper
 from app.log import logger
 from app.plugins import _PluginBase
@@ -32,7 +33,7 @@ class SiteDailyStatistic(_PluginBase):
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "3.7"
+    plugin_version = "3.8"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -1011,4 +1012,45 @@ class SiteDailyStatistic(_PluginBase):
         )
     
     def refresh_all_sites(self):
+        # 获取最近所有数据
+        data_list: List[SiteUserData] = self.siteoper.get_userdata()
+        if data_list:
+            # 获取所有站点名称
+            all_sites = list({f"{data.name}" : data.updated_day for data in data_list}.keys())
+            # 每个日期、每个站点只保留最后一条数据
+            data_list = list({f"{data.updated_day}_{data.name}": data for data in data_list}.values())
+            # 按日期倒序排序
+            data_list.sort(key=lambda x: x.updated_day, reverse=True)
+            # 获取今天的日期
+            today = data_list[0].updated_day
+            # 如果站点没有今天的数据，就用昨天的数据填充为今天的数据
+            for site in all_sites:
+                site_data_list = [data for data in data_list if data.name == site]
+                if site_data_list and site_data_list[0].updated_day != today:
+                    newest_site_data = site_data_list[0]
+                    logger.info(f"站点{newest_site_data.name}没有今日（{today}）数据，开始以 {newest_site_data.updated_day} 的数据填充")
+                    payload = SSiteUserData(
+                        domain=newest_site_data.domain,
+                        userid=newest_site_data.userid,
+                        username=newest_site_data.username,
+                        user_level=newest_site_data.user_level,
+                        join_at=newest_site_data.join_at,
+                        upload=newest_site_data.upload,
+                        download=newest_site_data.download,
+                        ratio=newest_site_data.ratio,
+                        bonus=newest_site_data.bonus,
+                        seeding=newest_site_data.seeding,
+                        seeding_size=newest_site_data.seeding_size,
+                        seeding_info=newest_site_data.seeding_info or [],
+                        leeching=newest_site_data.leeching,
+                        leeching_size=newest_site_data.leeching_size,
+                        message_unread=newest_site_data.message_unread,
+                        message_unread_contents=newest_site_data.message_unread_contents or [],
+                        updated_day=newest_site_data.today,
+                        err_msg=newest_site_data.err_msg
+                    ).dict()
+                    self.siteoper.update_userdata(domain=newest_site_data.domain,
+                                          name=newest_site_data.name,
+                                          payload=payload)
+                    logger.info(f"站点{newest_site_data.name}没有今日（{today}）数据，以 {newest_site_data.updated_day} 的数据填充成功")
         self.sitechain.refresh_userdatas()
