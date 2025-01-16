@@ -14,6 +14,7 @@ import requests
 from ruamel.yaml import CommentedMap
 
 from app import schemas
+from app.core.config import settings
 from app.chain.download import DownloadChain
 from app.chain.media import MediaChain
 from app.core.context import MediaInfo, TorrentInfo, Context
@@ -40,7 +41,7 @@ class TorrentSearch(_PluginBase):
     # 插件图标
     plugin_icon = "Searxng_A.png"
     # 插件版本
-    plugin_version = "1.9.3"
+    plugin_version = "2.0"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -768,7 +769,7 @@ class TorrentSearch(_PluginBase):
                                 {code_progress_start};
                                 try {{
                                     
-                                    const torrentRs = {code_post}("plugin/TorrentSearch/download", torrent);
+                                    const torrentRs = {code_post}("plugin/TorrentSearch/download?apikey={settings.API_TOKEN}", torrent);
                                     torrentRs.success ? downloadToast.success(`${{torrent == null ? void 0 : torrent.site_name}} ${{torrent == null ? void 0 : torrent.title}} 添加下载成功！`, {{duration: 5000}}) : downloadToast.error(`${{torrent == null ? void 0 : torrent.site_name}} ${{torrent == null ? void 0 : torrent.title}} 添加下载失败：${{torrentRs.message || "未知错误"}}`, {{duration: 5000}})
                                 }} catch (Exp) {{
                                     console.error(Exp);
