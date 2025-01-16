@@ -16,12 +16,12 @@
     "TorrentSearch": {
         "name": "搜索种子",
         "description": "直接搜索指定站点的种子",
-        "version": "1.9.2", 
+        "version": "1.9.3", 
         "icon": "Searxng_A.png",
         "author": "Xiang",
         "level": 1,
         "history": {
-            "v1.9.2": "修复问题",
+            "v1.9.3": "修复问题",
             "v1.9": "适配1.9.3",
             "v1.8": "支持按标题搜索各个站点种子"
         }

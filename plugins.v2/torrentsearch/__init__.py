@@ -40,7 +40,7 @@ class TorrentSearch(_PluginBase):
     # 插件图标
     plugin_icon = "Searxng_A.png"
     # 插件版本
-    plugin_version = "1.9.2"
+    plugin_version = "1.9.3"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -59,7 +59,7 @@ class TorrentSearch(_PluginBase):
     _torrent_data: list = []
     # 正则表达式
     _pattern_progress_start = re.compile('^\{(.*\(\));')
-    _pattern_progress_end = re.compile('\)}(.{1,20}\(\))}}$')
+    _pattern_progress_end = re.compile('\)\{}(.{1,20}\(\))}}$')
 
     # 配置属性
     _enabled: bool = False
