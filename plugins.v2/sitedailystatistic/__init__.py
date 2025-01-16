@@ -6,6 +6,7 @@ from typing import Optional, Any, List, Dict, Tuple
 import pytz
 from app.helper.sites import SitesHelper
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 from app import schemas
 from app.chain.site import SiteChain
@@ -31,7 +32,7 @@ class SiteDailyStatistic(_PluginBase):
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "3.6"
+    plugin_version = "3.7"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
