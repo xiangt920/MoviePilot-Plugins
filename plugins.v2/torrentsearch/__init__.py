@@ -40,7 +40,7 @@ class TorrentSearch(_PluginBase):
     # 插件图标
     plugin_icon = "Searxng_A.png"
     # 插件版本
-    plugin_version = "1.9.1"
+    plugin_version = "1.9.2"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -644,7 +644,7 @@ class TorrentSearch(_PluginBase):
         code_import_toast = TorrentSearch.exec_shell_command('grep -o -E "import\{[^;]+\}from\\"./index.js\\""  /public/site.js')
         code_use_toast = TorrentSearch.exec_shell_command('grep -m 1 -o -E "=.{1,5}useToast\(\)"  /public/site.js|head -1')
         code_post = TorrentSearch.exec_shell_command('grep -o -E -m 1 "await.{0,5}post"  /public/site.js |head -1')
-        code_progress = TorrentSearch.exec_shell_command('grep -m 1 -o -E "\{.{1,10};.{1,30}download.{200,280}\}\}"  /public/site.js|head -1')
+        code_progress = TorrentSearch.exec_shell_command('grep -m 1 -o -E "\{.{1,10};.{1,30}' + code_post + '.{20,280}\}\}"  /public/site.js|head -1')
         code_progress_start = TorrentSearch.re_group1(self._pattern_progress_start, code_progress)
         code_progress_end = TorrentSearch.re_group1(self._pattern_progress_end, code_progress)
         # # 拼装页面
