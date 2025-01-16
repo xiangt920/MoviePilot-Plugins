@@ -22,7 +22,7 @@ from app.core.event import eventmanager
 from app.core.metainfo import MetaInfo
 from app.db.models.user import User
 from app.db.site_oper import SiteOper
-from app.db.userauth import get_current_active_user
+from app.db.user_oper import get_current_active_user
 from app.helper.sites import SitesHelper
 from app.log import logger
 from app.plugins import _PluginBase
@@ -40,7 +40,7 @@ class TorrentSearch(_PluginBase):
     # 插件图标
     plugin_icon = "Searxng_A.png"
     # 插件版本
-    plugin_version = "1.9"
+    plugin_version = "1.9.1"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
