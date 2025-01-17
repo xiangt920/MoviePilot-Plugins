@@ -12,6 +12,7 @@ from app import schemas
 from app.chain.site import SiteChain
 from app.core.config import settings
 from app.core.event import eventmanager, Event
+from app.db.models.site import Site
 from app.db.models.siteuserdata import SiteUserData
 from app.schemas import SiteUserData as SSiteUserData
 from app.db.site_oper import SiteOper
@@ -33,7 +34,7 @@ class SiteDailyStatistic(_PluginBase):
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "3.9"
+    plugin_version = "3.9.1"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -1016,7 +1017,10 @@ class SiteDailyStatistic(_PluginBase):
         data_list: List[SiteUserData] = self.siteoper.get_userdata()
         if data_list:
             # 获取所有站点名称
-            all_sites = list({f"{data.name}" : data.updated_day for data in data_list}.keys())
+            all_sites_with_domain = {f"{data.domain}" : data.name for data in data_list}
+            all_sites = [domain for domain in all_sites_with_domain.keys() if self.siteoper.exists(domain)]
+            all_sites = [all_sites_with_domain[domain] for domain in all_sites_with_domain.keys() if self.siteoper.get_by_domain(domain).is_active == 1]
+
             # 每个日期、每个站点只保留最后一条数据
             data_list = list({f"{data.updated_day}_{data.name}": data for data in data_list}.values())
             # 按日期倒序排序
