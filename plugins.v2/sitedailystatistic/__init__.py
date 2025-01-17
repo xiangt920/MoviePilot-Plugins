@@ -34,7 +34,7 @@ class SiteDailyStatistic(_PluginBase):
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "3.9.1"
+    plugin_version = "3.9.2"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -1019,7 +1019,7 @@ class SiteDailyStatistic(_PluginBase):
             # 获取所有站点名称
             all_sites_with_domain = {f"{data.domain}" : data.name for data in data_list}
             all_sites = [domain for domain in all_sites_with_domain.keys() if self.siteoper.exists(domain)]
-            all_sites = [all_sites_with_domain[domain] for domain in all_sites_with_domain.keys() if self.siteoper.get_by_domain(domain).is_active == 1]
+            all_sites = [all_sites_with_domain[domain] for domain in all_sites if self.siteoper.get_by_domain(domain).is_active == 1]
 
             # 每个日期、每个站点只保留最后一条数据
             data_list = list({f"{data.updated_day}_{data.name}": data for data in data_list}.values())
