@@ -33,7 +33,7 @@ class SiteDailyStatistic(_PluginBase):
     # 插件图标
     plugin_icon = "Collabora_A.png"
     # 插件版本
-    plugin_version = "3.8"
+    plugin_version = "3.9"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -1046,7 +1046,7 @@ class SiteDailyStatistic(_PluginBase):
                         leeching_size=newest_site_data.leeching_size,
                         message_unread=newest_site_data.message_unread,
                         message_unread_contents=newest_site_data.message_unread_contents or [],
-                        updated_day=newest_site_data.today,
+                        updated_day=today,
                         err_msg=newest_site_data.err_msg
                     ).dict()
                     self.siteoper.update_userdata(domain=newest_site_data.domain,

@@ -30,11 +30,12 @@
     "SiteDailyStatistic": {
         "name": "站点每日数据统计",
         "description": "自动统计和展示当天累计站点数据",
-        "version": "3.8",
+        "version": "3.9",
         "icon": "Collabora_A.png",
         "author": "Xiang",
         "level": 1,
         "history": {
+            "v3.9": "修复bug",
             "v3.8": "在刷新失败时以旧数据填充",
             "v3.7": "导入CronTrigger",
             "v3.6": "添加定时任务",
