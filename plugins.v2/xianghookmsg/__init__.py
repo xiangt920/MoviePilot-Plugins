@@ -17,7 +17,7 @@ class XiangHookMsg(_PluginBase):
     # 插件图标
     plugin_icon = "Rocketchat_A.png"
     # 插件版本
-    plugin_version = "2.1"
+    plugin_version = "2.2"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -243,9 +243,9 @@ class XiangHookMsg(_PluginBase):
             rc_text = None
             if title:
                 if msg_body.get("link"):
-                    rc_text = "[%s](%s) \n" % (title, msg_body.get("link"))
+                    rc_text = "[%s](%s)  \n" % (title, msg_body.get("link"))
                 else:
-                    rc_text = "# %s \n" % title
+                    rc_text = "# %s  \n" % title
             if text:
                 rc_text = "%s%s \n" % (rc_text, text)
             if self._breaks:

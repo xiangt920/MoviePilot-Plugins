@@ -23,7 +23,7 @@ class AppriseExtMsg(_PluginBase):
     # 插件图标
     plugin_icon = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/apprise.png"
     # 插件版本
-    plugin_version = "1.1"
+    plugin_version = "1.2"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -302,7 +302,7 @@ class AppriseExtMsg(_PluginBase):
                 rc_title = None
                 if title:
                     if msg_body.get("link"):
-                        rc_title = "[%s](%s)" % (title, msg_body.get("link"))
+                        rc_title = "[%s](%s)  \n" % (title, msg_body.get("link"))
                     else:
                         rc_title = title
                 if text:

@@ -2,7 +2,7 @@
     "XiangHookMsg": {
         "name": "Xiang Webhook消息通知",
         "description": "支持使用Webhook发送消息通知。",
-        "version": "2.1",
+        "version": "2.2",
         "icon": "Rocketchat_A.png",
         "author": "Xiang",
         "level": 1,
@@ -12,7 +12,8 @@
             "v1.8": "配置页面对齐",
             "v1.9": "修复问题",
             "v2.0": "支持设置子路径",
-            "v2.1": "支持图片"
+            "v2.1": "支持图片",
+            "v2.2": "修复标题换行"
         }
     },
     "TorrentSearch": {
@@ -56,13 +57,14 @@
         "name": "Apprise 消息推送(扩展)",
         "description": "Apprise - 适用于几乎所有平台的推送通知！",
         "labels": "消息通知",
-        "version": "1.1",
+        "version": "1.2",
         "icon": "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/apprise.png",
         "author": "Xiang",
         "level": 1,
         "history": {
             "v1.0": "添加换行",
-            "v1.1": "支持图片"
+            "v1.1": "支持图片",
+            "v1.2": "修复标题换行"
         }
     }
 }
