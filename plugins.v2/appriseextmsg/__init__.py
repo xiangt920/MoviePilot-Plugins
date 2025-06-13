@@ -20,7 +20,7 @@ class AppriseExtMsg(_PluginBase):
     # 插件描述
     plugin_desc = "Apprise - 适用于几乎所有平台的推送通知！"
     # 插件图标
-    plugin_icon = "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/apprise.png"
+    plugin_icon = "https://raw.githubusercontent.com/homarr-labs/dashboard-icons/refs/heads/main/png/apprise.png"
     # 插件版本
     plugin_version = "1.0"
     # 插件作者
