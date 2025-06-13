@@ -50,5 +50,17 @@
             "v2.3": "支持仪表板组件",
             "v2.2": "支持当天累积统计数据"
         }
+    },
+    "AppriseExtMsg": {
+        "name": "Apprise 消息推送(扩展)",
+        "description": "Apprise - 适用于几乎所有平台的推送通知！",
+        "labels": "消息通知",
+        "version": "1.0",
+        "icon": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/apprise.png",
+        "author": "Xiang",
+        "level": 1,
+        "history": {
+            "v1.0": "添加换行"
+        }
     }
 }
