@@ -17,7 +17,7 @@ class XiangHookMsg(_PluginBase):
     # 插件图标
     plugin_icon = "Rocketchat_A.png"
     # 插件版本
-    plugin_version = "2.0"
+    plugin_version = "2.1"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
@@ -242,8 +242,8 @@ class XiangHookMsg(_PluginBase):
             rc_url = "%s/%s/%s" % (self._server, self._subpath, self._apikey)
             rc_text = None
             if title:
-                if msg_body.get("url"):
-                    rc_text = "[%s](%s) \n" % (title, msg_body.get("url"))
+                if msg_body.get("link"):
+                    rc_text = "[%s](%s) \n" % (title, msg_body.get("link"))
                 else:
                     rc_text = "# %s \n" % title
             if text:
@@ -251,10 +251,12 @@ class XiangHookMsg(_PluginBase):
             if self._breaks:
                 trim_text = self.new_line_after_2space_pattern.sub('\n', rc_text)
                 rc_text = str.replace(trim_text, '\n', '  \n')
+            image = msg_body.get("image") or ""
             rc_data = {
-                "text": rc_text
+                "text": rc_text,
+                "image": image
             }
-            logger.info(f"发送消息至{rc_url}, 内容：{rc_text}")
+            logger.info(f"发送消息至{rc_url}, 图片：{image}, 内容：{rc_text}")
             res = RequestUtils(headers={
                 },content_type="application/json").post_res(rc_url, json=rc_data)
             if res and res.status_code == 200:
