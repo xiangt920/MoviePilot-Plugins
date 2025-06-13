@@ -1,4 +1,5 @@
 import threading
+import re
 
 import apprise
 
