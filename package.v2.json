@@ -1,8 +1,8 @@
 {
-    "XiangChatMsg": {
-        "name": "XiangChat消息通知",
-        "description": "Xiang.Chat消息推送。",
-        "version": "1.9",
+    "XiangHookMsg": {
+        "name": "Xiang Webhook消息通知",
+        "description": "支持使用Webhook发送消息通知。",
+        "version": "2.0",
         "icon": "Rocketchat_A.png",
         "author": "Xiang",
         "level": 1,
@@ -10,7 +10,8 @@
             "v1.3": "支持消息发送至webhook",
             "v1.7": "支持markdown硬换行",
             "v1.8": "配置页面对齐",
-            "v1.9": "修复问题"
+            "v1.9": "修复问题",
+            "v2.0": "支持设置子路径"
         }
     },
     "TorrentSearch": {

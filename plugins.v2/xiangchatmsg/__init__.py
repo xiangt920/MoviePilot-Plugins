@@ -9,21 +9,21 @@ from app.utils.http import RequestUtils
 import re
 
 
-class XiangChatMsg(_PluginBase):
+class XiangHookMsg(_PluginBase):
     # 插件名称
-    plugin_name = "XiangChat消息通知"
+    plugin_name = "Xiang Webhook通知"
     # 插件描述
-    plugin_desc = "支持使用Xiang.Chat发送消息通知。"
+    plugin_desc = "支持使用Webhook发送消息通知。"
     # 插件图标
     plugin_icon = "Rocketchat_A.png"
     # 插件版本
-    plugin_version = "1.9"
+    plugin_version = "2.0"
     # 插件作者
     plugin_author = "Xiang"
     # 作者主页
     author_url = "https://github.com/xiangt920"
     # 插件配置项ID前缀
-    plugin_config_prefix = "xiang_chat_"
+    plugin_config_prefix = "xiang_hook_"
     # 加载顺序
     plugin_order = 30
     # 可使用的用户级别
@@ -36,6 +36,7 @@ class XiangChatMsg(_PluginBase):
     _server = None
     _apikey = None
     _msgtypes = []
+    _subpath = '/hooks'
     # convert '\n' to "  \n"(add two spaces)
     _breaks = False 
 
@@ -46,6 +47,10 @@ class XiangChatMsg(_PluginBase):
             self._server = config.get("server")
             self._apikey = config.get("apikey")
             self._breaks = config.get("breaks") or False
+            self._subpath = config.get("subPath") or "/hooks"
+        if self._subpath.endswith('/') or self._subpath.startswith('/'):
+            self._subpath = self._subpath.strip('/')
+
 
     def get_state(self) -> bool:
         return self._enabled and (True if self._server and self._apikey else False)
@@ -139,9 +144,9 @@ class XiangChatMsg(_PluginBase):
                                     {
                                         'component': 'VTextField',
                                         'props': {
-                                            'model': 'apikey',
-                                            'label': 'token',
-                                            'placeholder': '',
+                                            'model': 'subPath',
+                                            'label': '路径',
+                                            'placeholder': 'URL子路径，默认为/hooks',
                                         }
                                     }
                                 ]
@@ -154,7 +159,25 @@ class XiangChatMsg(_PluginBase):
                             {
                                 'component': 'VCol',
                                 'props': {
-                                    'cols': 12
+                                    'cols': 12,
+                                    'md': 6
+                                },
+                                'content': [
+                                    {
+                                        'component': 'VTextField',
+                                        'props': {
+                                            'model': 'apikey',
+                                            'label': 'token',
+                                            'placeholder': '访问token',
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                'component': 'VCol',
+                                'props': {
+                                    'cols': 12,
+                                    'md': 6
                                 },
                                 'content': [
                                     {
@@ -178,7 +201,8 @@ class XiangChatMsg(_PluginBase):
             'breaks': False,
             'msgtypes': [],
             'server': 'https://api.day.app',
-            'apikey': ''
+            'apikey': '',
+            'subPath': '/hooks'
         }
 
     def get_page(self) -> List[dict]:
@@ -215,7 +239,7 @@ class XiangChatMsg(_PluginBase):
         try:
             if not self._server or not self._apikey:
                 return False, "参数未配置"
-            rc_url = "%s/hooks/%s" % (self._server, self._apikey)
+            rc_url = "%s/%s/%s" % (self._server, self._subpath, self._apikey)
             rc_text = None
             if title:
                 if msg_body.get("url"):
